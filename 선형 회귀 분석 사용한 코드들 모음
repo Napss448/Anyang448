@@ -1,0 +1,112 @@
+# 데이터 불러오기
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+import pandas as pd
+
+# California 주택 데이터셋 불러오기
+california = fetch_california_housing()
+X = california.data
+y = california.target
+
+# 데이터 프레임으로 변환하여 확인
+california_df = pd.DataFrame(X, columns=california.feature_names)
+california_df['PRICE'] = y
+print(california_df.head())
+
+# 데이터 분할: 훈련 세트와 테스트 세트로 나누기
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 이상치 확인 및 처리
+import numpy as np
+from scipy import stats
+
+z_scores = stats.zscore(california_df)
+abs_z_scores = np.abs(z_scores)
+filtered_entries = (abs_z_scores < 3).all(axis=1)
+california_df = california_df[filtered_entries]
+print("이상치 제거 후 데이터셋 크기:", california_df.shape)
+
+# 특성 스케일링
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 모델 학습 및 평가
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+# Scikit-learn의 Linear Regression 모델 사용
+model_sklearn = LinearRegression()
+model_sklearn.fit(X_train, y_train)
+sklearn_predictions = model_sklearn.predict(X_test)
+
+# Scikit-learn의 Linear Regression 모델 결과 출력
+sklearn_mse = mean_squared_error(y_test, sklearn_predictions)
+print("Scikit-learn Linear Regression 모델의 평균 제곱 오차:", sklearn_mse)
+
+import matplotlib.pyplot as plt
+from matplotlib import font_manager
+
+# 폰트 설정
+plt.rcParams['font.family'] = 'NanumBarunGothic'
+plt.rcParams['axes.unicode_minus'] = False
+
+# 그래프 그리기
+importances = model_sklearn.coef_
+features = california.feature_names
+plt.figure(figsize=(10, 6))
+plt.barh(features, importances)
+plt.xlabel('특성 중요도')
+plt.title('선형 회귀 모델의 특성 중요도')
+plt.show()
+
+# Ridge, Lasso, ElasticNet 등의 모델 적용 및 비교
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
+
+ridge = Ridge(alpha=0.1)
+lasso = Lasso(alpha=0.1)
+elastic_net = ElasticNet(alpha=0.1, l1_ratio=0.5)
+
+ridge.fit(X_train_scaled, y_train)
+lasso.fit(X_train_scaled, y_train)
+elastic_net.fit(X_train_scaled, y_train)
+
+ridge_predictions = ridge.predict(X_test_scaled)
+lasso_predictions = lasso.predict(X_test_scaled)
+elastic_net_predictions = elastic_net.predict(X_test_scaled)
+
+ridge_mse = mean_squared_error(y_test, ridge_predictions)
+lasso_mse = mean_squared_error(y_test, lasso_predictions)
+elastic_net_mse = mean_squared_error(y_test, elastic_net_predictions)
+
+print("Ridge 모델의 평균 제곱 오차:", ridge_mse)
+print("Lasso 모델의 평균 제곱 오차:", lasso_mse)
+print("ElasticNet 모델의 평균 제곱 오차:", elastic_net_mse)
+
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+
+# 선형 회귀 모델 학습
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# 예측 값 생성
+predictions = model.predict(X_test)
+
+# 예측 값과 실제 값의 산점도 그리기
+plt.scatter(y_test, predictions, alpha=0.5)
+plt.xlabel('실제 주택 가격')
+plt.ylabel('모델 예측 주택 가격')
+plt.title('실제 주택 가격 vs. 모델 예측 주택 가격')
+plt.show()
+
+# 회귀 직선 그리기
+plt.plot(y_test, y_test, '-r')
+plt.scatter(y_test, predictions, alpha=0.5)
+plt.xlabel('실제 주택 가격')
+plt.ylabel('모델 예측 주택 가격')
+plt.title('실제 주택 가격 vs. 모델 예측 주택 가격')
+plt.show()
